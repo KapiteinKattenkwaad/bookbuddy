@@ -1,26 +1,56 @@
-model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  emailVerified DateTime? 
-  name          String?
-  books         Book[]
+generator client {
+  provider = "prisma-client-js"
+}
 
-  accounts      Account[]
-  sessions      Session[]
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String   @id @default(cuid())
+  email          String?  @unique
+  name           String?
+  emailVerified  DateTime?
+  image          String?
+  accounts       Account[]
+  sessions       Session[]
+  books          Book[]     // 👈 Relation
+
+  @@map("users")
+}
+
+model Book {
+  id          String   @id @default(cuid())
+  title       String
+  author      String
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("books")
 }
 
 model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  access_token      String? 
-  token_type        String? 
-  scope             String? 
-  user              User    @relation(fields: [userId], references: [id])
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String? @db.Text
+  access_token       String? @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String? @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id])
 
   @@unique([provider, providerAccountId])
+  @@map("accounts")
 }
 
 model Session {
@@ -28,8 +58,12 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
-  user         User     @relation(fields: [userId], references: [id])
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("sessions")
 }
+
 
 model VerificationToken {
   identifier String
@@ -37,4 +71,5 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+  @@map("verification_tokens")
 }
