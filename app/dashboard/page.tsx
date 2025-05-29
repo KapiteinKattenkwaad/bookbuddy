@@ -16,7 +16,7 @@ export default async function DashboardPage() {
 
   return (
     <main className={styles.container}>
-      <h1 className={styles.heading}>📚 Welcome, {session.user.email}</h1>
+      <h1 className={styles.heading}>📚 Welcome, {session?.user?.email}</h1>
       <p>This is your book dashboard.</p>
 
       <Link href="/api/auth/signout">
