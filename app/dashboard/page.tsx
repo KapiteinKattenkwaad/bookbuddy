@@ -1,32 +1,91 @@
+// app/dashboard/page.tsx
+'use client';
 
-import { getServerSession } from "next-auth";
-import { authOptions } from "../api/auth/[...nextauth]/route";
-import { redirect } from "next/navigation";
-import Link from "next/link";
-import styles from "./Dashboard.module.css";
+import { useEffect, useState } from 'react';
+import { getSession } from 'next-auth/react';
+import styles from './Dashboard.module.css';
 
+export default function DashboardPage() {
+  const [books, setBooks] = useState([]);
+  const [form, setForm] = useState({ title: '', author: '', status: 'want-to-read' });
+  const [loading, setLoading] = useState(true);
 
-export default async function DashboardPage() {
-  const session = await getServerSession(authOptions);
+  const fetchBooks = async () => {
+    try {
+      const res = await fetch('/api/books');
+      if (!res.ok) throw new Error('Failed to fetch books');
+  
+      const data = await res.json();
+      setBooks(data);
+    } catch (err) {
+      console.error('Error fetching books:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  //todo: uncomment this
-//   if (!session?.user) {
-//     redirect("/signin");
-//   }
+  const addBook = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await fetch('/api/books', {
+      method: 'POST',
+      body: JSON.stringify(form),
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (res.ok) {
+      setForm({ title: '', author: '', status: 'want-to-read' });
+      fetchBooks();
+    }
+  };
+
+  useEffect(() => {
+    fetchBooks();
+  }, []);
 
   return (
-    <main className={styles.container}>
-      <h1 className={styles.heading}>📚 Welcome, {session?.user?.email}</h1>
-      <p>This is your book dashboard.</p>
+    <div className={styles.container}>
+      <h1 className={styles.heading}>📚 Your Book Tracker</h1>
 
-      <Link href="/api/auth/signout">
-        <button className={styles.button}>Sign Out</button>
-      </Link>
+      <form className={styles.form} onSubmit={addBook}>
+        <input
+          className={styles.input}
+          type="text"
+          placeholder="Title"
+          value={form.title}
+          onChange={(e) => setForm({ ...form, title: e.target.value })}
+          required
+        />
+        <input
+          className={styles.input}
+          type="text"
+          placeholder="Author"
+          value={form.author}
+          onChange={(e) => setForm({ ...form, author: e.target.value })}
+          required
+        />
+        <select
+          className={styles.select}
+          value={form.status}
+          onChange={(e) => setForm({ ...form, status: e.target.value })}
+        >
+          <option value="want-to-read">Want to Read</option>
+          <option value="reading">Reading</option>
+          <option value="completed">Completed</option>
+        </select>
+        <button className={styles.button} type="submit">Add Book</button>
+      </form>
 
-      <hr />
-
-      <h2>Your Books</h2>
-      <p>[We’ll list them here next]</p>
-    </main>
+      {loading ? (
+        <p>Loading...</p>
+      ) : (
+        <ul className={styles.bookList}>
+          {books.map((book: any) => (
+            <li key={book.id} className={styles.bookItem}>
+              <strong>{book.title}</strong> by {book.author} — <em>{book.status}</em>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

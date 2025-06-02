@@ -25,6 +25,7 @@ model Book {
   title       String
   author      String
   userId      String
+  status      String 
   user        User     @relation(fields: [userId], references: [id])
 
   createdAt   DateTime @default(now())
